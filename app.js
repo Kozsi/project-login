@@ -104,6 +104,30 @@ app.post('/logout', (req, res) => {
     });
 });
 
+const moment = require('moment'); // If using moment
+// const { format, startOfMonth, endOfMonth, eachDayOfInterval } = require('date-fns'); // If using date-fns
+
+app.get('/calendar', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login'); // Redirect to login if not authenticated
+    }
+    const currentDate = moment(); // Current date using moment
+    // const currentDate = new Date(); // If using date-fns
+
+    const startOfMonth = currentDate.clone().startOf('month'); // Get start of month
+    const endOfMonth = currentDate.clone().endOf('month'); // Get end of month
+    const daysInMonth = []; // Array to hold days of the month
+
+    // Generate an array of all days in the month
+    for (let day = startOfMonth; day.isBefore(endOfMonth); day.add(1, 'days')) {
+        daysInMonth.push(day.clone());
+    }
+
+    res.render('calendar', { days: daysInMonth, date: currentDate, user: req.session.user });
+});
+
+
+
 // Start the server
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);

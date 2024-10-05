@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Calendar</title>
+    <link rel="stylesheet" type="text/css" href="/styles.css">
+    <style>
+        /* Calendar Styles */
+        body {
+            font-family: Arial, sans-serif; /* Ensure a consistent font */
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px; /* Reduced gap for compactness */
+            margin: 0 auto; /* Center the calendar */
+            max-width: 700px; /* Limit max width for better compactness */
+        }
+
+        .day {
+            border: 1px solid #ccc;
+            padding: 10px; /* Reduced padding for a compact look */
+            text-align: center;
+            background-color: #f9f9f9;
+            height: 70px; /* Adjusted height for compactness */
+            font-size: 1.2em; /* Slightly larger font for better readability */
+        }
+
+        .header {
+            grid-column: span 7;
+            font-weight: bold;
+            text-align: center;
+            background-color: #007bff;
+            color: white;
+            padding: 5px; /* Reduced padding */
+            font-size: 1.2em; /* Slightly larger font for headers */
+        }
+
+        .button {
+            margin: 10px; /* Reduced margin for compactness */
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1em; /* Font size for buttons */
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Month Navigation */
+        .navigation {
+            text-align: center;
+            margin: 20px 0; /* Margin around navigation */
+        }
+    </style>
+</head>
+<body>
+    <h1>Calendar for <%= date.format('MMMM YYYY') %></h1>
+    
+    <div class="navigation">
+        <a class="button" href="/calendar?date=<%= date.clone().subtract(1, 'month').format('YYYY-MM-DD') %>">Previous Month</a>
+        <a class="button" href="/calendar?date=<%= date.clone().add(1, 'month').format('YYYY-MM-DD') %>">Next Month</a>
+    </div>
+
+    <div class="calendar">
+        <div class="header">Sun</div>
+        <div class="header">Mon</div>
+        <div class="header">Tue</div>
+        <div class="header">Wed</div>
+        <div class="header">Thu</div>
+        <div class="header">Fri</div>
+        <div class="header">Sat</div>
+
+        <% days.forEach(day => { %>
+            <div class="day"><%= day.format('D') %></div>
+        <% }) %>
+    </div>
+    <button class="button" onclick="location.href='/'">Back to Welcome</button>
+</body>
+</html>

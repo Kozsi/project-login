@@ -12,6 +12,7 @@
 
     <% if (user) { %>
         <p>Hello, <%= user.username %>! You are logged in.</p>
+        <button onclick="location.href='/calendar'">Go to Calendar</button>
         <form action="/logout" method="POST">
             <button type="submit">Logout</button>
         </form>
@@ -21,3 +22,4 @@
     <% } %>
 </body>
 </html>
+
