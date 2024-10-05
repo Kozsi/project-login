@@ -22,9 +22,9 @@ app.use(session({
 // MySQL database connection
 const db = mysql.createConnection({
     host: 'localhost',
-    user: 'your-db-username',  // Change this to your database username
-    password: 'your-db-password', // Change this to your database password
-    database: 'your-db-name', // Change this to your database name
+    user: 'userdb_service',
+    password: 'password',  // replace with your MySQL password
+    database: 'userdb'
 });
 
 // Connect to the database

@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome</title>
+    <link rel="stylesheet" type="text/css" href="/styles.css">
 </head>
 <body>
     <h1>Welcome to Our Application!</h1>
-    <p>Please login or register to continue.</p>
+    <p class="welcome-message">Please login or register to continue.</p>
 
     <% if (user) { %>
         <p>Hello, <%= user.username %>! You are logged in.</p>
