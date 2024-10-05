@@ -114,7 +114,7 @@ app.get('/calendar', (req, res) => {
         return res.redirect('/login'); // Redirect if not logged in
     }
 
-    const currentUser = req.session.user; // Assuming you store user info in session
+    const currentUser = req.session.user; // User info stored in session
 
     // Check if the incoming month query parameter exists
     const monthQuery = req.query.month;
@@ -137,8 +137,8 @@ app.get('/calendar', (req, res) => {
     }
 
     // Calculate previous and next months based on monthDate
-    const previousMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1);
-    const nextMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1);
+    const previousMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 0); // Last day of the previous month
+    const nextMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 2, 0); // Last day of the next month
 
     // Log the details for debugging
     console.log(`Incoming month query parameter: ${monthQuery}`);
