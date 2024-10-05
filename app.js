@@ -110,32 +110,38 @@ const moment = require('moment'); // If using moment
 // app.js
 // Inside your route for displaying the calendar
 app.get('/calendar', (req, res) => {
+    // Check if user is logged in
     if (!req.session.user) {
         return res.redirect('/login'); // Redirect if not logged in
     }
 
     const currentUser = req.session.user; // Assuming you store user info in session
 
-    // Check if the incoming month query parameter exists
+    // Get the month query parameter from the URL
     const monthQuery = req.query.month;
 
-    // Parse the incoming month, or default to current month if not provided
-    const monthDate = monthQuery ? new Date(monthQuery) : new Date();
+    // Parse the incoming month, default to the current month if not provided
+    let monthDate;
+    if (monthQuery) {
+        monthDate = new Date(monthQuery); // Create a date from the query parameter
+    } else {
+        monthDate = new Date(); // Default to current date
+    }
 
     // Normalize the monthDate to the first day of the month
     monthDate.setDate(1); // Ensure we are at the first day of the month
 
-    // Calculate previous and next months based on monthDate
+    // Calculate the previous and next months based on monthDate
     const previousMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1);
     const nextMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1);
 
     // Log the details for debugging
     console.log(`Incoming month query parameter: ${monthQuery}`);
-    console.log(`Parsed incoming month: ${monthDate}`);
-    console.log(`Previous Month: ${previousMonth}`);
-    console.log(`Next Month: ${nextMonth}`);
+    console.log(`Parsed incoming month: ${monthDate.toISOString()}`); // Log as ISO for clarity
+    console.log(`Previous Month: ${previousMonth.toISOString()}`);
+    console.log(`Next Month: ${nextMonth.toISOString()}`);
 
-    // Render the calendar page
+    // Render the calendar page with required data
     res.render('calendar', {
         currentUser, 
         monthDate, // Send the correct monthDate to EJS
@@ -143,6 +149,7 @@ app.get('/calendar', (req, res) => {
         nextMonth
     });
 });
+
 
 
 
