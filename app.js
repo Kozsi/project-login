@@ -1,96 +1,110 @@
+// Import necessary modules
 const express = require('express');
+const session = require('express-session');
+const bodyParser = require('body-parser');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
-const bodyParser = require('body-parser');
-const session = require('express-session');
-const path = require('path');
-
 const app = express();
+const port = 3000;
 
 // Middleware
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-app.use(express.static('public'));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static('public')); // Serve static files
 app.set('view engine', 'ejs');
 
-// MySQL connection
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',  // replace with your MySQL password
-    database: 'userdb'
-});
-
-db.connect(err => {
-    if (err) throw err;
-    console.log('Connected to MySQL');
-});
-
-// Express session setup
+// Session configuration
 app.use(session({
-    secret: 'secret', // Replace with a strong secret in production
+    secret: 'your-secret-key', // Change this to a more secure secret
     resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false } // Set to true if using HTTPS
+    saveUninitialized: true,
 }));
 
-// Routes
+// MySQL database connection
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'your-db-username',  // Change this to your database username
+    password: 'your-db-password', // Change this to your database password
+    database: 'your-db-name', // Change this to your database name
+});
 
-// Registration Page
+// Connect to the database
+db.connect(err => {
+    if (err) {
+        console.error('Database connection failed: ' + err.stack);
+        return;
+    }
+    console.log('Connected to database.');
+});
+
+// Route for the welcome page
+app.get('/', (req, res) => {
+    res.render('welcome', { user: req.session.user });
+});
+
+// Route for registration
 app.get('/register', (req, res) => {
     res.render('register', { message: null });
 });
 
-// Handle registration
-app.post('/register', async (req, res) => {
+app.post('/register', (req, res) => {
     const { username, password } = req.body;
 
-    if (!username || !password) {
-        return res.render('register', { message: 'Please provide all details' });
-    }
+    // Hash the password
+    bcrypt.hash(password, 10, (err, hash) => {
+        if (err) throw err;
 
-    try {
-        const hashedPassword = await bcrypt.hash(password, 8);
-        db.query('INSERT INTO users SET ?', { username: username, password: hashedPassword }, (error, results) => {
-            if (error) {
-                console.error(error);
-                return res.render('register', { message: 'Error registering user. Please try again.' });
+        // Save the user to the database
+        db.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, hash], (err) => {
+            if (err) {
+                return res.render('register', { message: 'User already exists.' });
             }
-            res.render('register', { message: 'User registered successfully' });
+
+            req.session.user = { username }; // Store user in session
+            res.redirect('/'); // Redirect to welcome page
         });
-    } catch (err) {
-        console.error(err);
-        res.render('register', { message: 'Server error. Please try again later.' });
-    }
+    });
 });
 
-// Login Page
+// Route for login
 app.get('/login', (req, res) => {
     res.render('login', { message: null });
 });
 
-// Handle login
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
 
-    if (!username || !password) {
-        return res.render('login', { message: 'Please provide both username and password' });
-    }
+    // Query the database for the user
+    db.query('SELECT * FROM users WHERE username = ?', [username], (err, results) => {
+        if (err) throw err;
 
-    db.query('SELECT * FROM users WHERE username = ?', [username], async (error, results) => {
-        if (error) throw error;
-
-        if (results.length === 0 || !(await bcrypt.compare(password, results[0].password))) {
-            return res.render('login', { message: 'Username or Password is incorrect' });
+        if (results.length > 0) {
+            const user = results[0];
+            // Compare passwords
+            bcrypt.compare(password, user.password, (err, match) => {
+                if (match) {
+                    req.session.user = user; // Store user in session
+                    return res.redirect('/'); // Redirect to welcome page
+                } else {
+                    return res.render('login', { message: 'Invalid credentials.' });
+                }
+            });
+        } else {
+            return res.render('login', { message: 'User not found.' });
         }
+    });
+});
 
-        req.session.user = results[0].username;
-        res.send('Login successful! Welcome ' + req.session.user);
+// Route for logout
+app.post('/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            return res.redirect('/');
+        }
+        res.redirect('/');
     });
 });
 
 // Start the server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
 });
