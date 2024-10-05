@@ -67,13 +67,15 @@
     </style>
 </head>
 <body>
-    <h1>Calendar for <%= date.format('MMMM YYYY') %></h1>
-    
-    <div class="navigation">
-        <a class="button" href="/calendar?date=<%= date.clone().subtract(1, 'month').format('YYYY-MM-DD') %>">Previous Month</a>
-        <a class="button" href="/calendar?date=<%= date.clone().add(1, 'month').format('YYYY-MM-DD') %>">Next Month</a>
-    </div>
 
+    <div class="navigation">
+        <a class="button" href="/calendar?month=<%= previousMonth.toISOString().split('T')[0] %>">Previous Month</a>
+        <a class="button" href="/calendar?month=<%= nextMonth.toISOString().split('T')[0] %>">Next Month</a>
+    </div>
+    
+    
+    <h1>Calendar for <%= monthDate.toLocaleString('default', { month: 'long' }) %> <%= monthDate.getFullYear() %></h1>
+    
     <div class="calendar">
         <div class="header">Sun</div>
         <div class="header">Mon</div>
@@ -82,11 +84,38 @@
         <div class="header">Thu</div>
         <div class="header">Fri</div>
         <div class="header">Sat</div>
-
-        <% days.forEach(day => { %>
-            <div class="day"><%= day.format('D') %></div>
-        <% }) %>
+    
+        <% 
+        const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+        const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+        const startDay = firstDay.getDay();
+        const days = [];
+    
+        // Push empty cells for days before the first day of the month
+        for (let i = 0; i < startDay; i++) {
+            days.push(null);
+        }
+    
+        // Push all days of the month into the days array
+        for (let day = 1; day <= lastDay.getDate(); day++) {
+            days.push(new Date(monthDate.getFullYear(), monthDate.getMonth(), day));
+        }
+    
+        // Render the days in the calendar
+        days.forEach(day => { 
+            if (day) {
+                %>
+                <div class="day"><%= day.getDate() %></div>
+                <%
+            } else {
+                %>
+                <div class="day"></div>
+                <%
+            }
+        });
+        %>
     </div>
     <button class="button" onclick="location.href='/'">Back to Welcome</button>
 </body>
 </html>
+

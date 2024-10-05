@@ -107,24 +107,42 @@ app.post('/logout', (req, res) => {
 const moment = require('moment'); // If using moment
 // const { format, startOfMonth, endOfMonth, eachDayOfInterval } = require('date-fns'); // If using date-fns
 
+// app.js
+// Inside your route for displaying the calendar
 app.get('/calendar', (req, res) => {
     if (!req.session.user) {
-        return res.redirect('/login'); // Redirect to login if not authenticated
-    }
-    const currentDate = moment(); // Current date using moment
-    // const currentDate = new Date(); // If using date-fns
-
-    const startOfMonth = currentDate.clone().startOf('month'); // Get start of month
-    const endOfMonth = currentDate.clone().endOf('month'); // Get end of month
-    const daysInMonth = []; // Array to hold days of the month
-
-    // Generate an array of all days in the month
-    for (let day = startOfMonth; day.isBefore(endOfMonth); day.add(1, 'days')) {
-        daysInMonth.push(day.clone());
+        return res.redirect('/login'); // Redirect if not logged in
     }
 
-    res.render('calendar', { days: daysInMonth, date: currentDate, user: req.session.user });
+    const currentUser = req.session.user; // Assuming you store user info in session
+
+    // Check if the incoming month query parameter exists
+    let monthQuery = req.query.month;
+
+    // Parse the incoming month, or default to current month if not provided
+    let monthDate = monthQuery ? new Date(monthQuery) : new Date();
+
+    // Normalize the monthDate to the first day of the month
+    monthDate.setDate(1); // Set to the first day of the month
+
+    // Calculate previous and next months based on monthDate
+    const previousMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1);
+    const nextMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1);
+
+    // Log the details
+    console.log(`Incoming month query parameter: ${monthQuery}`);
+    console.log(`Parsed incoming month: ${monthDate}`); // Should show the correct month now
+    console.log(`Previous Month: ${previousMonth}`);
+    console.log(`Next Month: ${nextMonth}`);
+
+    res.render('calendar', {
+        currentUser, 
+        monthDate, // Send the correct monthDate
+        previousMonth,
+        nextMonth
+    });
 });
+
 
 
 
