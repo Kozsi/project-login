@@ -117,31 +117,33 @@ app.get('/calendar', (req, res) => {
     const currentUser = req.session.user; // Assuming you store user info in session
 
     // Check if the incoming month query parameter exists
-    let monthQuery = req.query.month;
+    const monthQuery = req.query.month;
 
     // Parse the incoming month, or default to current month if not provided
-    let monthDate = monthQuery ? new Date(monthQuery) : new Date();
+    const monthDate = monthQuery ? new Date(monthQuery) : new Date();
 
     // Normalize the monthDate to the first day of the month
-    monthDate.setDate(1); // Set to the first day of the month
+    monthDate.setDate(1); // Ensure we are at the first day of the month
 
     // Calculate previous and next months based on monthDate
     const previousMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1);
     const nextMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1);
 
-    // Log the details
+    // Log the details for debugging
     console.log(`Incoming month query parameter: ${monthQuery}`);
-    console.log(`Parsed incoming month: ${monthDate}`); // Should show the correct month now
+    console.log(`Parsed incoming month: ${monthDate}`);
     console.log(`Previous Month: ${previousMonth}`);
     console.log(`Next Month: ${nextMonth}`);
 
+    // Render the calendar page
     res.render('calendar', {
         currentUser, 
-        monthDate, // Send the correct monthDate
+        monthDate, // Send the correct monthDate to EJS
         previousMonth,
         nextMonth
     });
 });
+
 
 
 
