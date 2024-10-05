@@ -110,17 +110,16 @@ const moment = require('moment'); // If using moment
 // app.js
 // Inside your route for displaying the calendar
 app.get('/calendar', (req, res) => {
-    // Check if user is logged in
     if (!req.session.user) {
         return res.redirect('/login'); // Redirect if not logged in
     }
 
     const currentUser = req.session.user; // Assuming you store user info in session
 
-    // Get the month query parameter from the URL
+    // Check if the incoming month query parameter exists
     const monthQuery = req.query.month;
 
-    // Parse the incoming month, default to the current month if not provided
+    // Parse the incoming month, or default to current month if not provided
     let monthDate;
     if (monthQuery) {
         monthDate = new Date(monthQuery); // Create a date from the query parameter
@@ -131,7 +130,13 @@ app.get('/calendar', (req, res) => {
     // Normalize the monthDate to the first day of the month
     monthDate.setDate(1); // Ensure we are at the first day of the month
 
-    // Calculate the previous and next months based on monthDate
+    // If this is the initial load and there's no monthQuery, redirect to include current month in the URL
+    if (!monthQuery) {
+        const currentMonth = monthDate.toISOString().split('T')[0]; // Format the month as YYYY-MM-DD
+        return res.redirect(`/calendar?month=${currentMonth}`); // Redirect to the current month URL
+    }
+
+    // Calculate previous and next months based on monthDate
     const previousMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1);
     const nextMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1);
 
@@ -149,6 +154,7 @@ app.get('/calendar', (req, res) => {
         nextMonth
     });
 });
+
 
 
 
