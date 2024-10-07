@@ -11,38 +11,46 @@
             font-family: Arial, sans-serif; /* Ensure a consistent font */
             margin: 0;
             padding: 20px;
+            background-color: #f4f4f4; /* Light background for contrast */
         }
 
         h1 {
             text-align: center;
             margin-bottom: 20px;
+            color: #333; /* Darker text for better readability */
         }
 
         .calendar {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px; /* Reduced gap for compactness */
-            margin: 0 auto; /* Center the calendar */
-            max-width: 700px; /* Limit max width for better compactness */
-        }
-
-        .day {
-            border: 1px solid #ccc;
-            padding: 10px; /* Reduced padding for a compact look */
-            text-align: center;
-            background-color: #f9f9f9;
-            height: 70px; /* Adjusted height for compactness */
-            font-size: 1.2em; /* Slightly larger font for better readability */
+             display: grid;
+             grid-template-columns: repeat(7, 1fr);
+             gap: 5px; /* Space between days */
+             margin: 0 auto; /* Center the calendar */
+             max-width: 700px; /* Control width for better layout */
+             background-color: #fff; /* Optional background for the calendar */
+             border-radius: 5px; /* Rounded corners for aesthetics */
+             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
         }
 
         .header {
-            grid-column: span 7;
             font-weight: bold;
             text-align: center;
-            background-color: #007bff;
+            background-color: #007bff; /* Header background color */
             color: white;
-            padding: 5px; /* Reduced padding */
-            font-size: 1.2em; /* Slightly larger font for headers */
+            padding: 10px; /* Padding for headers */
+            border-radius: 5px; /* Rounded corners for header cells */
+        }
+
+        .day {
+            border: 1px solid #ccc; /* Day border */
+            padding: 10px; /* Padding inside each day */
+            text-align: center;
+            background-color: #f9f9f9; /* Background for days */
+            height: 70px; /* Set height for uniformity */
+            font-size: 1.2em; /* Font size for readability */
+        }
+
+        .day:hover {
+            background-color: #e9e9e9; /* Slight hover effect */
         }
 
         .button {
@@ -51,12 +59,14 @@
             background-color: #007bff;
             color: white;
             border: none;
+            border-radius: 5px; /* Rounded corners for buttons */
             cursor: pointer;
             font-size: 1em; /* Font size for buttons */
+            transition: background-color 0.3s; /* Smooth background transition */
         }
 
         .button:hover {
-            background-color: #0056b3;
+            background-color: #0056b3; /* Darker color on hover */
         }
 
         /* Month Navigation */
@@ -73,7 +83,6 @@
         <a class="button" href="/calendar?month=<%= nextMonth.toISOString().split('T')[0] %>">Next Month</a>
     </div>    
     
-    
     <h1>Calendar for <%= monthDate.toLocaleString('default', { month: 'long' }) %> <%= monthDate.getFullYear() %></h1>
     
     <div class="calendar">
@@ -88,7 +97,7 @@
         <% 
         const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
         const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-        const startDay = firstDay.getDay();
+        const startDay = firstDay.getDay(); // Get the day of the week the month starts on
         const days = [];
     
         // Push empty cells for days before the first day of the month
@@ -118,4 +127,6 @@
     <button class="button" onclick="location.href='/'">Back to Welcome</button>
 </body>
 </html>
+
+
 
