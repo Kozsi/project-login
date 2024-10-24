@@ -7,19 +7,23 @@
     <link rel="stylesheet" type="text/css" href="/styles.css">
 </head>
 <body>
-    <h1>Welcome to Our Application!</h1>
-    <p class="welcome-message">Please login or register to continue.</p>
-
     <% if (user) { %>
-        <p>Hello, <%= user.username %>! You are logged in.</p>
-        <button onclick="location.href='/calendar'">Go to Calendar</button>
-        <form action="/logout" method="POST">
-            <button type="submit">Logout</button>
-        </form>
+        <!-- Include the sidebar partial -->
+        <%- include('partials/sidebar') %>
+
+        <!-- Main content section -->
+        <div class="main-content" style="margin-left: 220px; padding: 20px;">
+            <h1>Welcome, <%= user.username %>!</h1>
+            <button onclick="location.href='/calendar'">Go to Calendar</button>
+        </div>
     <% } else { %>
+        <!-- Display this if the user is not logged in -->
+        <h1>Welcome to Our Application!</h1>
+        <p class="welcome-message">Please login or register to continue.</p>
         <button onclick="location.href='/login'">Login</button>
         <button onclick="location.href='/register'">Register</button>
     <% } %>
 </body>
 </html>
+
 

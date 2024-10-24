@@ -95,6 +95,7 @@
         <div class="header">Sat</div>
     
         <% 
+        <%- include('partials/sidebar') %>
         const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
         const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
         const startDay = firstDay.getDay(); // Get the day of the week the month starts on

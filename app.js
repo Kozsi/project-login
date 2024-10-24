@@ -104,6 +104,17 @@ app.post('/logout', (req, res) => {
     });
 });
 
+// Route for profile page
+app.get('/profile', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login'); // Redirect if not logged in
+    }
+
+    const currentUser = req.session.user;
+    res.render('profile', { user: currentUser });
+});
+
+
 const moment = require('moment'); // If using moment
 // const { format, startOfMonth, endOfMonth, eachDayOfInterval } = require('date-fns'); // If using date-fns
 
