@@ -167,8 +167,80 @@ app.get('/calendar', (req, res) => {
 });
 
 
+// Proile stuff
+
+app.get('/profile/setup', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login'); // Redirect if not logged in
+    }
+
+    res.render('profile-setup'); // Render the profile setup page
+});
+
+app.post('/profile/setup', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login'); // Redirect if not logged in
+    }
+
+    const { first_name, last_name, pet_name, birth_date, phone_number } = req.body;
+    const username = req.session.user.username; // Get the logged-in user's username
+
+    // Insert or update the user's profile information in the database
+    db.query('INSERT INTO user_profiles (username, first_name, last_name, pet_name, birth_date, phone_number) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE first_name = ?, last_name = ?, pet_name = ?, birth_date = ?, phone_number = ?',
+    [username, first_name, last_name, pet_name, birth_date, phone_number, first_name, last_name, pet_name, birth_date, phone_number],
+    (err, result) => {
+        if (err) {
+            console.error('Error saving profile information:', err);
+            return res.redirect('/profile/setup');
+        }
+
+        // Redirect to profile page after successful setup
+        res.redirect('/profile');
+    });
+});
+
+// Profile route to fetch user profile data from the database
+app.get('/profile', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login'); // Redirect if not logged in
+    }
+
+    const currentUser = req.session.user;
+
+    // Query to get the user's profile based on the username
+    db.query('SELECT * FROM user_profiles WHERE username = ?', [currentUser.username], (err, results) => {
+        if (err) {
+            console.error("Error fetching profile data: ", err);
+            return res.render('profile', {
+                user: currentUser,
+                profile: null, // Send null profile if there's an error
+            });
+        }
+
+        const profile = results.length > 0 ? results[0] : null;
+
+        // Render the profile page and pass user and profile data
+        res.render('profile', {
+            user: currentUser,
+            profile: profile // Pass profile data or null if not found
+        });
+    });
+});
 
 
+// Route to save the edited profile data
+app.post('/edit-profile', (req, res) => {
+    const { first_name, last_name, pet_name, birthdate, phone_number } = req.body;
+    const currentUser = req.session.user;
+
+    // Update the user's profile in the database
+    db.query('INSERT INTO user_profiles (username, first_name, last_name, pet_name, birthdate, phone_number) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE first_name = ?, last_name = ?, pet_name = ?, birthdate = ?, phone_number = ?',
+        [currentUser.username, first_name, last_name, pet_name, birthdate, phone_number, first_name, last_name, pet_name, birthdate, phone_number],
+        (err, results) => {
+            if (err) throw err;
+            res.redirect('/profile'); // After saving, redirect back to the profile page
+        });
+});
 
 
 

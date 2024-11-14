@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+    <link rel="stylesheet" type="text/css" href="/styles.css">
+</head>
+<body>
+    <%- include('partials/sidebar') %>
+
+    <div class="main-content" style="margin-left: 220px; padding: 20px;">
+        <h1>Profile of <%= user.username %></h1>
+
+        <% if (profile) { %>
+            <p><strong>First Name:</strong> <%= profile.first_name %></p>
+            <p><strong>Last Name:</strong> <%= profile.last_name %></p>
+            <p><strong>Pet Name:</strong> <%= profile.pet_name %></p>
+            <p><strong>Birthdate:</strong> <%= profile.birthdate %></p>
+            <p><strong>Phone Number:</strong> <%= profile.phone_number %></p>
+
+            <button onclick="location.href='/edit-profile'">Edit Profile</button>
+        <% } else { %>
+            <p>No profile information available. Please complete your profile.</p>
+            <button onclick="location.href='/edit-profile'">Complete Profile</button>
+        <% } %>
+    </div>
+
+</body>
+</html>
+
+
+
