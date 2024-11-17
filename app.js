@@ -36,6 +36,9 @@ db.connect(err => {
     console.log('Connected to database.');
 });
 
+// Middleware to set up the layout for all views
+app.locals.layout = 'layout'; // This sets the default layout
+
 // Route for the welcome page
 app.get('/', (req, res) => {
     res.render('welcome', { user: req.session.user });
