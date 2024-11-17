@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="main-content" style="margin-left: 220px; padding: 20px;">
+        <h1>Edit Profile for <%= user.username %></h1>
+        <form action="/edit-profile" method="POST">
+            <label for="first_name">First Name:</label>
+            <input type="text" id="first_name" name="first_name" value="<%= profile ? profile.first_name : '' %>" required>
+
+            <label for="last_name">Last Name:</label>
+            <input type="text" id="last_name" name="last_name" value="<%= profile ? profile.last_name : '' %>" required>
+
+            <label for="pet_name">Pet Name:</label>
+            <input type="text" id="pet_name" name="pet_name" value="<%= profile ? profile.pet_name : '' %>">
+
+            <label for="birth_date">Birthdate:</label>
+            <input type="date" id="birth_date" name="birth_date" value="<%= profile ? profile.birth_date : '' %>">
+
+            <label for="phone_number">Phone Number:</label>
+            <input type="text" id="phone_number" name="phone_number" value="<%= profile ? profile.phone_number : '' %>">
+
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+</body>
+</html>
