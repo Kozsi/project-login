@@ -104,17 +104,6 @@ app.post('/logout', (req, res) => {
     });
 });
 
-// Route for profile page
-app.get('/profile', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login'); // Redirect if not logged in
-    }
-
-    const currentUser = req.session.user;
-    res.render('profile', { user: currentUser });
-});
-
-
 const moment = require('moment'); // If using moment
 // const { format, startOfMonth, endOfMonth, eachDayOfInterval } = require('date-fns'); // If using date-fns
 
@@ -197,11 +186,15 @@ app.post('/profile/setup', (req, res) => {
 
 
 app.get('/profile', (req, res) => {
+    console.log("Profile route hit");
+
     if (!req.session.user) {
+        console.log("User not logged in, redirecting to login.");
         return res.redirect('/login');
     }
 
     const currentUser = req.session.user;
+    console.log("Current User:", currentUser);
 
     db.query('SELECT * FROM user_profiles WHERE username = ?', [currentUser.username], (err, results) => {
         if (err) {
@@ -209,16 +202,19 @@ app.get('/profile', (req, res) => {
             return res.redirect('/');
         }
 
+        console.log("Profile query results:", results);
+
         const profile = results.length > 0 ? results[0] : null;
 
-        // Redirect to profile setup if no profile exists
         if (!profile) {
+            console.log("No profile found, redirecting to /profile/setup.");
             return res.redirect('/profile/setup');
         }
 
         res.render('profile', { user: currentUser, profile });
     });
 });
+
 
 
 app.get('/edit-profile', (req, res) => {
