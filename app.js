@@ -2,13 +2,12 @@
 const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise'); // Ensure promise-based version is used
 const bcrypt = require('bcryptjs');
 const app = express();
 const port = 3000;
 
 // Middleware
-// Middleware to set up the layout for all views
 app.locals.layout = 'layout'; // This sets the default layout
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public')); // Serve static files
@@ -22,28 +21,32 @@ app.use(session({
 }));
 
 // MySQL database connection
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'userdb_service',
-    password: 'password',  // replace with your MySQL password
-    database: 'userdb'
-});
+let db;
 
-// Connect to the database
-db.connect(err => {
-    if (err) {
+// Initialize the database connection asynchronously
+async function initializeDbConnection() {
+    try {
+        db = await mysql.createConnection({
+            host: 'localhost',
+            user: 'userdb_service',
+            password: 'password',  // replace with your MySQL password
+            database: 'userdb'
+        });
+        console.log('Connected to database.');
+    } catch (err) {
         console.error('Database connection failed: ' + err.stack);
-        return;
+        process.exit(1); // Exit if the connection fails
     }
-    console.log('Connected to database.');
-});
+}
 
-const moment = require('moment'); // If using moment
-// const { format, startOfMonth, endOfMonth, eachDayOfInterval } = require('date-fns'); // If using date-fns
+// Call the function to initialize the DB
+initializeDbConnection();
 
-// app.js
-// Inside your route for displaying the calendar
-app.get('/calendar', (req, res) => {
+// Moment.js or date-fns can be used for date manipulations if needed
+const moment = require('moment');
+
+// Route for displaying the calendar
+app.get('/calendar', async (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login'); // Redirect if not logged in
     }
@@ -78,33 +81,31 @@ app.get('/calendar', (req, res) => {
     const startOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
     const endOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
 
-    db.query(
-        'SELECT * FROM day_registrations WHERE registration_date BETWEEN ? AND ?',
-        [startOfMonth, endOfMonth],
-        (err, results) => {
-            if (err) {
-                console.error("Error fetching registrations:", err);
-                return res.status(500).send('Error fetching registrations');
-            }
+    try {
+        const [registrations] = await db.query(
+            'SELECT * FROM day_registrations WHERE registration_date BETWEEN ? AND ?',
+            [startOfMonth, endOfMonth]
+        );
 
-            // Format the results to be used in the calendar
-            const registrations = results.map(reg => ({
-                petName: reg.pet_name,
-                registrationDate: new Date(reg.registration_date).toISOString().split('T')[0], // Format date as YYYY-MM-DD
-            }));
+        // Format the results to be used in the calendar
+        const formattedRegistrations = registrations.map(reg => ({
+            petName: reg.pet_name,
+            registrationDate: new Date(reg.registration_date).toISOString().split('T')[0], // Format date as YYYY-MM-DD
+        }));
 
-            // Render the calendar page with registration data
-            res.render('calendar', {
-                currentUser,
-                monthDate,
-                previousMonth,
-                nextMonth,
-                registrations // Pass the registrations to the calendar view
-            });
-        }
-    );
+        // Render the calendar page with registration data
+        res.render('calendar', {
+            currentUser,
+            monthDate,
+            previousMonth,
+            nextMonth,
+            registrations: formattedRegistrations, // Pass the registrations to the calendar view
+        });
+    } catch (err) {
+        console.error("Error fetching registrations:", err);
+        return res.status(500).send('Error fetching registrations');
+    }
 });
-
 
 // Route for the welcome page
 app.get('/', (req, res) => {
@@ -116,23 +117,22 @@ app.get('/register', (req, res) => {
     res.render('register', { message: null });
 });
 
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
     const { username, password } = req.body;
 
     // Hash the password
-    bcrypt.hash(password, 10, (err, hash) => {
-        if (err) throw err;
+    try {
+        const hash = await bcrypt.hash(password, 10);
 
         // Save the user to the database
-        db.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, hash], (err) => {
-            if (err) {
-                return res.render('register', { message: 'User already exists.' });
-            }
+        await db.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, hash]);
 
-            req.session.user = { username }; // Store user in session
-            res.redirect('/'); // Redirect to welcome page
-        });
-    });
+        req.session.user = { username }; // Store user in session
+        res.redirect('/'); // Redirect to welcome page
+    } catch (err) {
+        console.error("Error registering user:", err);
+        res.render('register', { message: 'User already exists.' });
+    }
 });
 
 // Route for login
@@ -140,28 +140,28 @@ app.get('/login', (req, res) => {
     res.render('login', { message: null });
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
-    // Query the database for the user
-    db.query('SELECT * FROM users WHERE username = ?', [username], (err, results) => {
-        if (err) throw err;
-
+    try {
+        const [results] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
         if (results.length > 0) {
             const user = results[0];
             // Compare passwords
-            bcrypt.compare(password, user.password, (err, match) => {
-                if (match) {
-                    req.session.user = user; // Store user in session
-                    return res.redirect('/'); // Redirect to welcome page
-                } else {
-                    return res.render('login', { message: 'Invalid credentials.' });
-                }
-            });
+            const match = await bcrypt.compare(password, user.password);
+            if (match) {
+                req.session.user = user; // Store user in session
+                return res.redirect('/'); // Redirect to welcome page
+            } else {
+                return res.render('login', { message: 'Invalid credentials.' });
+            }
         } else {
             return res.render('login', { message: 'User not found.' });
         }
-    });
+    } catch (err) {
+        console.error("Error logging in:", err);
+        return res.render('login', { message: 'An error occurred. Please try again.' });
+    }
 });
 
 // Route for logout
@@ -182,37 +182,31 @@ app.get('/profile/setup', (req, res) => {
     res.render('profile-setup', { user: req.session.user, message: null });
 });
 
-app.post('/profile/setup', (req, res) => {
+app.post('/profile/setup', async (req, res) => {
     const { first_name, last_name, pet_name, birth_date, phone_number } = req.body;
     const username = req.session.user.username;
 
-    // Insert the profile data into the database
-    db.query('INSERT INTO user_profiles (username, first_name, last_name, pet_name, birth_date, phone_number) VALUES (?, ?, ?, ?, ?, ?)', 
-        [username, first_name, last_name, pet_name, birth_date, phone_number], 
-        (err) => {
-            if (err) {
-                console.error("Error saving profile:", err);
-                return res.render('profile-setup', { user: req.session.user, message: "An error occurred. Please try again." });
-            }
-            res.redirect('/profile'); // Redirect to profile page after setup
-        }
-    );
+    try {
+        await db.query('INSERT INTO user_profiles (username, first_name, last_name, pet_name, birth_date, phone_number) VALUES (?, ?, ?, ?, ?, ?)', 
+            [username, first_name, last_name, pet_name, birth_date, phone_number]);
+
+        res.redirect('/profile'); // Redirect to profile page after setup
+    } catch (err) {
+        console.error("Error saving profile:", err);
+        return res.render('profile-setup', { user: req.session.user, message: "An error occurred. Please try again." });
+    }
 });
 
 // Profile route
-app.get('/profile', (req, res) => {
+app.get('/profile', async (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login');
     }
 
     const currentUser = req.session.user;
 
-    db.query('SELECT * FROM user_profiles WHERE username = ?', [currentUser.username], (err, results) => {
-        if (err) {
-            console.error("Error fetching profile:", err);
-            return res.redirect('/');
-        }
-
+    try {
+        const [results] = await db.query('SELECT * FROM user_profiles WHERE username = ?', [currentUser.username]);
         const profile = results.length > 0 ? results[0] : null;
 
         if (!profile) {
@@ -220,29 +214,31 @@ app.get('/profile', (req, res) => {
         }
 
         res.render('profile', { user: currentUser, profile });
-    });
+    } catch (err) {
+        console.error("Error fetching profile:", err);
+        return res.redirect('/');
+    }
 });
 
 // Edit profile route
-app.get('/edit-profile', (req, res) => {
+app.get('/edit-profile', async (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login');
     }
 
     const currentUser = req.session.user;
 
-    db.query('SELECT * FROM user_profiles WHERE username = ?', [currentUser.username], (err, results) => {
-        if (err) {
-            console.error("Error fetching profile data:", err);
-            return res.redirect('/profile');
-        }
-
+    try {
+        const [results] = await db.query('SELECT * FROM user_profiles WHERE username = ?', [currentUser.username]);
         const profile = results.length > 0 ? results[0] : null;
         res.render('edit-profile', { user: currentUser, profile });
-    });
+    } catch (err) {
+        console.error("Error fetching profile data:", err);
+        return res.redirect('/profile');
+    }
 });
 
-app.post('/edit-profile', (req, res) => {
+app.post('/edit-profile', async (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login');
     }
@@ -250,40 +246,45 @@ app.post('/edit-profile', (req, res) => {
     const { first_name, last_name, pet_name, birth_date, phone_number } = req.body;
     const currentUser = req.session.user;
 
-    db.query(
-        'UPDATE user_profiles SET first_name = ?, last_name = ?, pet_name = ?, birth_date = ?, phone_number = ? WHERE username = ?',
-        [first_name, last_name, pet_name, birth_date, phone_number, currentUser.username],
-        (err) => {
-            if (err) {
-                console.error("Error updating profile:", err);
-                return res.redirect('/edit-profile');
-            }
-            res.redirect('/profile');
-        }
-    );
+    try {
+        await db.query(
+            'UPDATE user_profiles SET first_name = ?, last_name = ?, pet_name = ?, birth_date = ?, phone_number = ? WHERE username = ?',
+            [first_name, last_name, pet_name, birth_date, phone_number, currentUser.username]
+        );
+        res.redirect('/profile');
+    } catch (err) {
+        console.error("Error updating profile:", err);
+        return res.redirect('/edit-profile');
+    }
 });
 
-// Backend changes for pet registration \\
-
-app.get('/api/registrations', (req, res) => {
+// Backend changes for pet registration
+app.get('/api/registrations', async (req, res) => {
     const { month } = req.query;
-    const startOfMonth = new Date(month);
-    const endOfMonth = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0);
+    if (!month) {
+        return res.status(400).json({ error: 'Month query parameter is required' });
+    }
 
-    console.log('Month query:', month);
-    console.log('Start of Month:', startOfMonth);
-    console.log('End of Month:', endOfMonth);
+    const monthStart = new Date(month);
+    monthStart.setDate(1);
+    const formattedStart = monthStart.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+    const formattedEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0)
+        .toISOString().split('T')[0]; // End of the month
 
+    try {
+        // Query the database using async/await
+        const [registrations] = await db.query(`
+            SELECT pet_name, registration_date
+            FROM day_registrations
+            WHERE registration_date BETWEEN ? AND ?`, 
+            [formattedStart, formattedEnd]
+        );
 
-    db.query(
-        'SELECT * FROM day_registrations WHERE registration_date BETWEEN ? AND ?',
-        [startOfMonth, endOfMonth],
-        (err, results) => {
-            if (err) return res.status(500).send('Error fetching registrations');
-            console.log("error fetching registrations")
-            res.json(results);
-        }
-    );
+        res.json(registrations);
+    } catch (err) {
+        console.error('Database error:', err);
+        res.status(500).json({ error: 'Failed to fetch registrations' });
+    }
 });
 
 app.post('/api/register-pet', (req, res) => {
