@@ -8,6 +8,8 @@ const app = express();
 const port = 3000;
 
 // Middleware
+// Middleware to set up the layout for all views
+app.locals.layout = 'layout'; // This sets the default layout
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public')); // Serve static files
 app.set('view engine', 'ejs');
@@ -36,8 +38,73 @@ db.connect(err => {
     console.log('Connected to database.');
 });
 
-// Middleware to set up the layout for all views
-app.locals.layout = 'layout'; // This sets the default layout
+const moment = require('moment'); // If using moment
+// const { format, startOfMonth, endOfMonth, eachDayOfInterval } = require('date-fns'); // If using date-fns
+
+// app.js
+// Inside your route for displaying the calendar
+app.get('/calendar', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login'); // Redirect if not logged in
+    }
+
+    const currentUser = req.session.user; // User info stored in session
+
+    // Check if the incoming month query parameter exists
+    const monthQuery = req.query.month;
+
+    // Parse the incoming month, or default to current month if not provided
+    let monthDate;
+    if (monthQuery) {
+        monthDate = new Date(monthQuery); // Create a date from the query parameter
+    } else {
+        monthDate = new Date(); // Default to current date
+    }
+
+    // Normalize the monthDate to the first day of the month
+    monthDate.setDate(1); // Ensure we are at the first day of the month
+
+    // If this is the initial load and there's no monthQuery, redirect to include current month in the URL
+    if (!monthQuery) {
+        const currentMonth = monthDate.toISOString().split('T')[0]; // Format the month as YYYY-MM-DD
+        return res.redirect(`/calendar?month=${currentMonth}`); // Redirect to the current month URL
+    }
+
+    // Calculate previous and next months based on monthDate
+    const previousMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 0); // Last day of the previous month
+    const nextMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 2, 0); // Last day of the next month
+
+    // Fetch registrations for the selected month
+    const startOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const endOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+
+    db.query(
+        'SELECT * FROM day_registrations WHERE registration_date BETWEEN ? AND ?',
+        [startOfMonth, endOfMonth],
+        (err, results) => {
+            if (err) {
+                console.error("Error fetching registrations:", err);
+                return res.status(500).send('Error fetching registrations');
+            }
+
+            // Format the results to be used in the calendar
+            const registrations = results.map(reg => ({
+                petName: reg.pet_name,
+                registrationDate: new Date(reg.registration_date).toISOString().split('T')[0], // Format date as YYYY-MM-DD
+            }));
+
+            // Render the calendar page with registration data
+            res.render('calendar', {
+                currentUser,
+                monthDate,
+                previousMonth,
+                nextMonth,
+                registrations // Pass the registrations to the calendar view
+            });
+        }
+    );
+});
+
 
 // Route for the welcome page
 app.get('/', (req, res) => {
@@ -107,61 +174,7 @@ app.post('/logout', (req, res) => {
     });
 });
 
-const moment = require('moment'); // If using moment
-// const { format, startOfMonth, endOfMonth, eachDayOfInterval } = require('date-fns'); // If using date-fns
-
-// app.js
-// Inside your route for displaying the calendar
-app.get('/calendar', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login'); // Redirect if not logged in
-    }
-
-    const currentUser = req.session.user; // User info stored in session
-
-    // Check if the incoming month query parameter exists
-    const monthQuery = req.query.month;
-
-    // Parse the incoming month, or default to current month if not provided
-    let monthDate;
-    if (monthQuery) {
-        monthDate = new Date(monthQuery); // Create a date from the query parameter
-    } else {
-        monthDate = new Date(); // Default to current date
-    }
-
-    // Normalize the monthDate to the first day of the month
-    monthDate.setDate(1); // Ensure we are at the first day of the month
-
-    // If this is the initial load and there's no monthQuery, redirect to include current month in the URL
-    if (!monthQuery) {
-        const currentMonth = monthDate.toISOString().split('T')[0]; // Format the month as YYYY-MM-DD
-        return res.redirect(`/calendar?month=${currentMonth}`); // Redirect to the current month URL
-    }
-
-    // Calculate previous and next months based on monthDate
-    const previousMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 0); // Last day of the previous month
-    const nextMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 2, 0); // Last day of the next month
-
-    // Log the details for debugging
-    console.log(`Incoming month query parameter: ${monthQuery}`);
-    console.log(`Parsed incoming month: ${monthDate.toISOString()}`); // Log as ISO for clarity
-    console.log(`Previous Month: ${previousMonth.toISOString()}`);
-    console.log(`Next Month: ${nextMonth.toISOString()}`);
-
-    // Render the calendar page with required data
-    res.render('calendar', {
-        currentUser, 
-        monthDate, // Send the correct monthDate to EJS
-        previousMonth,
-        nextMonth
-    });
-});
-
-
-// Proile stuff
-
-// Display profile setup form
+// Route for profile setup
 app.get('/profile/setup', (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login');
@@ -169,7 +182,6 @@ app.get('/profile/setup', (req, res) => {
     res.render('profile-setup', { user: req.session.user, message: null });
 });
 
-// Handle profile setup form submission
 app.post('/profile/setup', (req, res) => {
     const { first_name, last_name, pet_name, birth_date, phone_number } = req.body;
     const username = req.session.user.username;
@@ -187,17 +199,13 @@ app.post('/profile/setup', (req, res) => {
     );
 });
 
-
+// Profile route
 app.get('/profile', (req, res) => {
-    console.log("Profile route hit");
-
     if (!req.session.user) {
-        console.log("User not logged in, redirecting to login.");
         return res.redirect('/login');
     }
 
     const currentUser = req.session.user;
-    console.log("Current User:", currentUser);
 
     db.query('SELECT * FROM user_profiles WHERE username = ?', [currentUser.username], (err, results) => {
         if (err) {
@@ -205,12 +213,9 @@ app.get('/profile', (req, res) => {
             return res.redirect('/');
         }
 
-        console.log("Profile query results:", results);
-
         const profile = results.length > 0 ? results[0] : null;
 
         if (!profile) {
-            console.log("No profile found, redirecting to /profile/setup.");
             return res.redirect('/profile/setup');
         }
 
@@ -218,8 +223,7 @@ app.get('/profile', (req, res) => {
     });
 });
 
-
-
+// Edit profile route
 app.get('/edit-profile', (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login');
@@ -259,7 +263,69 @@ app.post('/edit-profile', (req, res) => {
     );
 });
 
+// Backend changes for pet registration \\
 
+app.get('/api/registrations', (req, res) => {
+    const { month } = req.query;
+    const startOfMonth = new Date(month);
+    const endOfMonth = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0);
+
+    console.log('Month query:', month);
+    console.log('Start of Month:', startOfMonth);
+    console.log('End of Month:', endOfMonth);
+
+
+    db.query(
+        'SELECT * FROM day_registrations WHERE registration_date BETWEEN ? AND ?',
+        [startOfMonth, endOfMonth],
+        (err, results) => {
+            if (err) return res.status(500).send('Error fetching registrations');
+            console.log("error fetching registrations")
+            res.json(results);
+        }
+    );
+});
+
+app.post('/api/register-pet', (req, res) => {
+    if (!req.session.user) {
+        console.log('Unauthorized access attempt');
+        return res.status(401).send('Unauthorized');
+    }
+
+    const { pet_name, registration_date } = req.body;
+    const user_id = req.session.user.id;
+
+    if (!pet_name || !registration_date) {
+        console.log('Missing pet_name or registration_date in request');
+        return res.status(400).send('Pet name and registration date are required');
+    }
+
+    db.query(
+        'INSERT INTO day_registrations (user_id, pet_name, registration_date) VALUES (?, ?, ?)',
+        [user_id, pet_name, registration_date],
+        (err) => {
+            if (err) {
+                console.log('Error registering pet:', err);
+                return res.status(500).send('Error registering pet');
+            }
+            res.status(200).send('Pet registered successfully');
+        }
+    );
+});
+
+app.delete('/api/remove-registration/:id', (req, res) => {
+    const { id } = req.params;
+    const user_id = req.session.user.id;
+
+    db.query(
+        'DELETE FROM day_registrations WHERE id = ? AND user_id = ?',
+        [id, user_id],
+        (err) => {
+            if (err) return res.status(500).send('Error removing registration');
+            res.status(200).send('Registration removed successfully');
+        }
+    );
+});
 
 
 // Start the server

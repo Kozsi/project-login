@@ -8,15 +8,8 @@
 </head>
 <body>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <ul>
-            <li><a href="/">Welcome</a></li>
-            <li><a href="/profile">Profile</a></li>
-            <li><a href="/calendar">Calendar</a></li>
-            <li><form action="/logout" method="post"><button type="submit">Logout</button></form></li>
-        </ul>
-    </div>
+    <!-- Include Sidebar -->
+    <%- include('partials/sidebar') %>
 
     <!-- Main content area -->
     <div class="content">
@@ -26,3 +19,4 @@
 
 </body>
 </html>
+
