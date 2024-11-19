@@ -59,6 +59,7 @@
             margin-top: 10px;
             font-size: 0.9em;
             color: #007bff;
+            display: block; /* Ensure it is visible */
         }
 
         .button {
@@ -229,28 +230,35 @@
                 const dayElement = document.querySelector(`[data-date="${registrationDate}"]`);
                 dayElement.querySelector('.registered-pet').innerText = petName;
             } catch (err) {
-                console.error('Error:', err);
+                console.log('Error:', err);
                 alert('Failed to register pet. Please try again.');
             }
         });
 
         // Fetch existing registrations for the current month
-        (async () => {
-            try {
-                const response = await fetch(`/api/registrations?month=<%= monthDate.toISOString().split('T')[0] %>`);
-                if (!response.ok) throw new Error('Failed to fetch registrations');
+        // Fetch existing registrations for the current month
+    (async () => {
+        try {
+            console.log("frontend1");
+            const response = await fetch(`/api/registrations?month=<%= monthDate.toISOString().split('T')[0] %>`);
+            if (!response.ok) throw new Error('Failed to fetch registrations');
 
-                const data = await response.json();
-                data.forEach(registration => {
-                    const dayElement = document.querySelector(`[data-date="${registration.registration_date}"]`);
-                    if (dayElement) {
-                        dayElement.querySelector('.registered-pet').innerText = registration.pet_name;
-                    }
-                });
-            } catch (err) {
-                console.error('Error fetching registrations:', err);
-            }
-        })();
+            console.log("frontend2");
+            const data = await response.json();
+            console.log(data); // Log the response to check if registration_date is in the correct format
+
+            data.forEach(registration => {
+                const dayElement = document.querySelector(`[data-date="${registration.registration_date.split('T')[0]}"]`);
+                if (dayElement) {
+                    const registeredPetElement = dayElement.querySelector('.registered-pet');
+                    registeredPetElement.innerText = registration.pet_name;
+                    registeredPetElement.style.display = 'block'; // Make sure it is visible
+                }
+            });
+        } catch (err) {
+            console.log('Error fetching registrations:', err);
+        }
+    })();
     </script>
 </body>
 </html>

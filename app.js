@@ -34,7 +34,7 @@ async function initializeDbConnection() {
         });
         console.log('Connected to database.');
     } catch (err) {
-        console.error('Database connection failed: ' + err.stack);
+        console.log('Database connection failed: ' + err.stack);
         process.exit(1); // Exit if the connection fails
     }
 }
@@ -102,7 +102,7 @@ app.get('/calendar', async (req, res) => {
             registrations: formattedRegistrations, // Pass the registrations to the calendar view
         });
     } catch (err) {
-        console.error("Error fetching registrations:", err);
+        console.log("Error fetching registrations:", err);
         return res.status(500).send('Error fetching registrations');
     }
 });
@@ -130,7 +130,7 @@ app.post('/register', async (req, res) => {
         req.session.user = { username }; // Store user in session
         res.redirect('/'); // Redirect to welcome page
     } catch (err) {
-        console.error("Error registering user:", err);
+        console.log("Error registering user:", err);
         res.render('register', { message: 'User already exists.' });
     }
 });
@@ -159,7 +159,7 @@ app.post('/login', async (req, res) => {
             return res.render('login', { message: 'User not found.' });
         }
     } catch (err) {
-        console.error("Error logging in:", err);
+        console.log("Error logging in:", err);
         return res.render('login', { message: 'An error occurred. Please try again.' });
     }
 });
@@ -192,7 +192,7 @@ app.post('/profile/setup', async (req, res) => {
 
         res.redirect('/profile'); // Redirect to profile page after setup
     } catch (err) {
-        console.error("Error saving profile:", err);
+        console.log("Error saving profile:", err);
         return res.render('profile-setup', { user: req.session.user, message: "An error occurred. Please try again." });
     }
 });
@@ -215,7 +215,7 @@ app.get('/profile', async (req, res) => {
 
         res.render('profile', { user: currentUser, profile });
     } catch (err) {
-        console.error("Error fetching profile:", err);
+        console.log("Error fetching profile:", err);
         return res.redirect('/');
     }
 });
@@ -233,7 +233,7 @@ app.get('/edit-profile', async (req, res) => {
         const profile = results.length > 0 ? results[0] : null;
         res.render('edit-profile', { user: currentUser, profile });
     } catch (err) {
-        console.error("Error fetching profile data:", err);
+        console.log("Error fetching profile data:", err);
         return res.redirect('/profile');
     }
 });
@@ -253,7 +253,7 @@ app.post('/edit-profile', async (req, res) => {
         );
         res.redirect('/profile');
     } catch (err) {
-        console.error("Error updating profile:", err);
+        console.log("Error updating profile:", err);
         return res.redirect('/edit-profile');
     }
 });
@@ -279,10 +279,11 @@ app.get('/api/registrations', async (req, res) => {
             WHERE registration_date BETWEEN ? AND ?`, 
             [formattedStart, formattedEnd]
         );
-
-        res.json(registrations);
+        console.log("backend");
+        console.log(registrations); // Log to check if the dates are correct
+        res.json(registrations); // Send the list of registrations back as JSON
     } catch (err) {
-        console.error('Database error:', err);
+        console.log('Database error:', err);
         res.status(500).json({ error: 'Failed to fetch registrations' });
     }
 });
