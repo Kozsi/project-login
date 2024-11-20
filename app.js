@@ -14,6 +14,7 @@ app.use(express.static('public')); // Serve static files
 app.set('view engine', 'ejs');
 app.use(express.json());
 
+
 // Session configuration
 app.use(session({
     secret: 'your-secret-key', // Change this to a more secure secret

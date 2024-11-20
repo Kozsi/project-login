@@ -17,7 +17,7 @@
         h1 {
             text-align: center;
             margin-bottom: 20px;
-            color: #333;
+            color: #007bff;
         }
 
         .calendar {
@@ -48,18 +48,29 @@
             height: 70px;
             font-size: 1.2em;
             position: relative;
+            display: flex;
+            flex-direction: column; /* Stack elements vertically */
+            justify-content: flex-start; /* Align content to the top */
         }
 
         .day:hover {
-            background-color: #e9e9e9;
+            background-color: #2560ce;
             cursor: pointer;
         }
 
         .registered-pet {
-            margin-top: 10px;
+            margin-top: 5px; /* Slightly reduce margin to move it down without overlap */
             font-size: 0.9em;
             color: #007bff;
-            display: block; /* Ensure it is visible */
+            display: block; /* Ensures it's visible */
+            text-align: center; /* Centers the pet name */
+        }
+
+        /* Optional: Style for the day number */
+        .day-number {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #333; /* Black or dark color for day number */
         }
 
         .button {
@@ -81,55 +92,6 @@
         .navigation {
             text-align: center;
             margin: 20px 0;
-        }
-
-        #registration-modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-        }
-
-        #registration-modal form {
-            display: flex;
-            flex-direction: column;
-        }
-
-        #registration-modal input {
-            margin: 5px 0;
-            padding: 10px;
-            font-size: 1em;
-        }
-
-        #registration-modal button {
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        #registration-modal button:hover {
-            background-color: #0056b3;
-        }
-
-        #modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 999;
         }
     </style>
 </head>
