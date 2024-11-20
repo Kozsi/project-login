@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Calendar</title>
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
+    <style>
+        /* Calendar Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #007bff;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin: 0 auto;
+            max-width: 700px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            font-weight: bold;
+            text-align: center;
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .day {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+            background-color: #f9f9f9;
+            height: 70px;
+            font-size: 1.2em;
+            position: relative;
+            display: flex;
+            flex-direction: column; /* Stack elements vertically */
+            justify-content: flex-start; /* Align content to the top */
+        }
+
+        .day:hover {
+            background-color: #2560ce;
+            cursor: pointer;
+        }
+
+        .registered-pet {
+            margin-top: 5px; /* Slightly reduce margin to move it down without overlap */
+            font-size: 0.9em;
+            color: #007bff;
+            display: block; /* Ensures it's visible */
+            text-align: center; /* Centers the pet name */
+        }
+
+        /* Optional: Style for the day number */
+        .day-number {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #333; /* Black or dark color for day number */
+        }
+
+        .button {
+            margin: 10px;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        .navigation {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/sidebar') %>
+
+    <div class="navigation">
+        <a class="button" href="/calendar?month=<%= previousMonth.toISOString().split('T')[0] %>">Previous Month</a>
+        <a class="button" href="/calendar?month=<%= nextMonth.toISOString().split('T')[0] %>">Next Month</a>
+    </div>
+
+    <h1>Calendar for <%= monthDate.toLocaleString('default', { month: 'long' }) %> <%= monthDate.getFullYear() %></h1>
+
+    <div class="calendar">
+        <div class="header">Sun</div>
+        <div class="header">Mon</div>
+        <div class="header">Tue</div>
+        <div class="header">Wed</div>
+        <div class="header">Thu</div>
+        <div class="header">Fri</div>
+        <div class="header">Sat</div>
+    
+        <% 
+        const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+        const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+        const startDay = firstDay.getDay();
+        const days = [];
+    
+        for (let i = 0; i < startDay; i++) {
+            days.push(null);
+        }
+    
+        for (let day = 1; day <= lastDay.getDate(); day++) {
+            days.push(new Date(monthDate.getFullYear(), monthDate.getMonth(), day));
+        }
+    
+        days.forEach(day => { 
+            if (day) {
+                const formattedDate = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+        %>
+            <div class="day" data-date="<%= formattedDate %>" onclick="openRegistrationModal(this)">
+                <%= day.getDate() %>
+                <div class="registered-pet" id="registered-pet-<%= formattedDate %>"></div>
+            </div>
+        <% 
+            } else { 
+        %>
+            <div class="day"></div>
+        <% 
+            } 
+        });
+        %>
+    </div>
+    
+
+    <button class="button" onclick="location.href='/'">Back to Welcome</button>
+
+    <!-- Modal for registration -->
+    <div id="modal-overlay" onclick="closeRegistrationModal()"></div>
+    <div id="registration-modal">
+        <form id="registration-form">
+            <h3>Register Your Pet</h3>
+            <input type="text" id="pet-name" placeholder="Pet Name" required />
+            <input type="hidden" id="selected-date" />
+            <button type="submit">Register</button>
+            <button type="button" onclick="closeRegistrationModal()">Cancel</button>
+        </form>
+    </div>
+
+    <script>
+        function openRegistrationModal(dayElement) {
+            const date = new Date(dayElement.getAttribute('data-date'));
+            const selectedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+            document.getElementById('selected-date').value = selectedDate;
+            document.getElementById('modal-overlay').style.display = 'block';
+            document.getElementById('registration-modal').style.display = 'block';
+            console.log('Selected Date:', selectedDate);
+
+            console.log('Original data-date:', dayElement.getAttribute('data-date'));
+            console.log('Parsed Date object:', date);
+            console.log('Date after timezone adjustment:', selectedDate);
+
+        }
+
+        function closeRegistrationModal() {
+            console.log("Closing modal..."); // Debugging line
+            document.getElementById('modal-overlay').style.display = 'none';
+            document.getElementById('registration-modal').style.display = 'none';
+        }
+
+        document.getElementById('registration-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const petName = document.getElementById('pet-name').value;
+            console.log("pet-name: " + petName);
+            const registrationDate = document.getElementById('selected-date').value;
+            console.log("selected-date: " + registrationDate);
+
+            try {
+                const response = await fetch('/api/register-pet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pet_name: petName, registration_date: registrationDate })
+                });
+
+                if (!response.ok) throw new Error('Failed to register pet');
+
+                alert('Pet registered!');
+                closeRegistrationModal(); // Ensure this is being called
+                console.log("Modal closed after successful registration."); // Debugging line
+
+                // Update the calendar with the new registration immediately after submitting
+                const dayElement = document.querySelector(`[data-date="${registrationDate}"]`);
+                    const registeredPetElement = dayElement.querySelector('.registered-pet');
+                    registeredPetElement.innerText = petName;
+                    registeredPetElement.style.display = 'block'; // Ensure it's visible
+                
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Failed to register pet. Please try again.');
+            }
+        });
+
+
+
+        // Fetch existing registrations for the current month
+        (async () => {
+    try {
+        console.log("frontend1");
+        const response = await fetch(`/api/registrations?month=<%= monthDate.toISOString().split('T')[0] %>`);
+        if (!response.ok) throw new Error('Failed to fetch registrations');
+
+        console.log("frontend2");
+        const data = await response.json();
+        console.log(data); // Log the response to check if registration_date is in the correct format
+
+        data.forEach(registration => {
+            const utcDate = new Date(registration.registration_date);
+            
+            // Convert UTC date to local date
+            const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000);
+            const formattedLocalDate = localDate.toISOString().split('T')[0]; // Convert to local date string (YYYY-MM-DD)
+
+            // Select the correct day element
+            const dayElement = document.querySelector(`[data-date="${formattedLocalDate}"]`);
+            if (dayElement) {
+                const registeredPetElement = dayElement.querySelector('.registered-pet');
+                registeredPetElement.innerText = registration.pet_name;
+                registeredPetElement.style.display = 'block'; // Ensure it's visible
+            }
+        });
+    } catch (err) {
+        console.log('Error fetching registrations:', err);
+    }
+})();
+    </script>
+</body>
+</html>
