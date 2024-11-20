@@ -151,27 +151,28 @@
         <div class="header">Thu</div>
         <div class="header">Fri</div>
         <div class="header">Sat</div>
-
+    
         <% 
         const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
         const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
         const startDay = firstDay.getDay();
         const days = [];
-
+    
         for (let i = 0; i < startDay; i++) {
             days.push(null);
         }
-
+    
         for (let day = 1; day <= lastDay.getDate(); day++) {
             days.push(new Date(monthDate.getFullYear(), monthDate.getMonth(), day));
         }
-
+    
         days.forEach(day => { 
             if (day) {
+                const formattedDate = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
         %>
-            <div class="day" data-date="<%= day.toISOString().split('T')[0] %>" onclick="openRegistrationModal(this)">
+            <div class="day" data-date="<%= formattedDate %>" onclick="openRegistrationModal(this)">
                 <%= day.getDate() %>
-                <div class="registered-pet" id="registered-pet-<%= day.toISOString().split('T')[0] %>"></div>
+                <div class="registered-pet" id="registered-pet-<%= formattedDate %>"></div>
             </div>
         <% 
             } else { 
@@ -182,6 +183,7 @@
         });
         %>
     </div>
+    
 
     <button class="button" onclick="location.href='/'">Back to Welcome</button>
 
@@ -199,13 +201,21 @@
 
     <script>
         function openRegistrationModal(dayElement) {
-            const selectedDate = dayElement.getAttribute('data-date');
+            const date = new Date(dayElement.getAttribute('data-date'));
+            const selectedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
             document.getElementById('selected-date').value = selectedDate;
             document.getElementById('modal-overlay').style.display = 'block';
             document.getElementById('registration-modal').style.display = 'block';
+            console.log('Selected Date:', selectedDate);
+
+            console.log('Original data-date:', dayElement.getAttribute('data-date'));
+            console.log('Parsed Date object:', date);
+            console.log('Date after timezone adjustment:', selectedDate);
+
         }
 
         function closeRegistrationModal() {
+            console.log("Closing modal..."); // Debugging line
             document.getElementById('modal-overlay').style.display = 'none';
             document.getElementById('registration-modal').style.display = 'none';
         }
@@ -213,7 +223,9 @@
         document.getElementById('registration-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const petName = document.getElementById('pet-name').value;
+            console.log("pet-name: " + petName);
             const registrationDate = document.getElementById('selected-date').value;
+            console.log("selected-date: " + registrationDate);
 
             try {
                 const response = await fetch('/api/register-pet', {
@@ -225,40 +237,53 @@
                 if (!response.ok) throw new Error('Failed to register pet');
 
                 alert('Pet registered!');
-                closeRegistrationModal();
+                closeRegistrationModal(); // Ensure this is being called
+                console.log("Modal closed after successful registration."); // Debugging line
 
+                // Update the calendar with the new registration immediately after submitting
                 const dayElement = document.querySelector(`[data-date="${registrationDate}"]`);
-                dayElement.querySelector('.registered-pet').innerText = petName;
+                    const registeredPetElement = dayElement.querySelector('.registered-pet');
+                    registeredPetElement.innerText = petName;
+                    registeredPetElement.style.display = 'block'; // Ensure it's visible
+                
             } catch (err) {
-                console.log('Error:', err);
+                console.error('Error:', err);
                 alert('Failed to register pet. Please try again.');
             }
         });
 
-        // Fetch existing registrations for the current month
-        // Fetch existing registrations for the current month
-    (async () => {
-        try {
-            console.log("frontend1");
-            const response = await fetch(`/api/registrations?month=<%= monthDate.toISOString().split('T')[0] %>`);
-            if (!response.ok) throw new Error('Failed to fetch registrations');
 
-            console.log("frontend2");
-            const data = await response.json();
-            console.log(data); // Log the response to check if registration_date is in the correct format
 
-            data.forEach(registration => {
-                const dayElement = document.querySelector(`[data-date="${registration.registration_date.split('T')[0]}"]`);
-                if (dayElement) {
-                    const registeredPetElement = dayElement.querySelector('.registered-pet');
-                    registeredPetElement.innerText = registration.pet_name;
-                    registeredPetElement.style.display = 'block'; // Make sure it is visible
-                }
-            });
-        } catch (err) {
-            console.log('Error fetching registrations:', err);
-        }
-    })();
+        // Fetch existing registrations for the current month
+        (async () => {
+    try {
+        console.log("frontend1");
+        const response = await fetch(`/api/registrations?month=<%= monthDate.toISOString().split('T')[0] %>`);
+        if (!response.ok) throw new Error('Failed to fetch registrations');
+
+        console.log("frontend2");
+        const data = await response.json();
+        console.log(data); // Log the response to check if registration_date is in the correct format
+
+        data.forEach(registration => {
+            const utcDate = new Date(registration.registration_date);
+            
+            // Convert UTC date to local date
+            const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000);
+            const formattedLocalDate = localDate.toISOString().split('T')[0]; // Convert to local date string (YYYY-MM-DD)
+
+            // Select the correct day element
+            const dayElement = document.querySelector(`[data-date="${formattedLocalDate}"]`);
+            if (dayElement) {
+                const registeredPetElement = dayElement.querySelector('.registered-pet');
+                registeredPetElement.innerText = registration.pet_name;
+                registeredPetElement.style.display = 'block'; // Ensure it's visible
+            }
+        });
+    } catch (err) {
+        console.log('Error fetching registrations:', err);
+    }
+})();
     </script>
 </body>
 </html>

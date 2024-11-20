@@ -12,6 +12,7 @@ app.locals.layout = 'layout'; // This sets the default layout
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public')); // Serve static files
 app.set('view engine', 'ejs');
+app.use(express.json());
 
 // Session configuration
 app.use(session({
@@ -261,27 +262,44 @@ app.post('/edit-profile', async (req, res) => {
 // Backend changes for pet registration
 app.get('/api/registrations', async (req, res) => {
     const { month } = req.query;
+
     if (!month) {
         return res.status(400).json({ error: 'Month query parameter is required' });
     }
 
+    // Start date (1st day of the month, beginning of the day in UTC)
     const monthStart = new Date(month);
     monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0); // Set to midnight UTC
     const formattedStart = monthStart.toISOString().split('T')[0]; // 'YYYY-MM-DD'
-    const formattedEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0)
-        .toISOString().split('T')[0]; // End of the month
+
+    // End date (last day of the month, end of the day in UTC)
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999); // Set to the last moment of the month UTC
+    const formattedEnd = monthEnd.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+
+    console.log("Fetching registrations from:", formattedStart, "to:", formattedEnd);
 
     try {
         // Query the database using async/await
         const [registrations] = await db.query(`
             SELECT pet_name, registration_date
             FROM day_registrations
-            WHERE registration_date BETWEEN ? AND ?`, 
+            WHERE registration_date >= ? AND registration_date <= ?`, 
             [formattedStart, formattedEnd]
         );
-        console.log("backend");
-        console.log(registrations); // Log to check if the dates are correct
-        res.json(registrations); // Send the list of registrations back as JSON
+
+        console.log("Registrations fetched:", registrations); // Log the registrations to check if the dates are correct
+        
+        // Adjust dates based on the local time zone after fetching the data
+        const adjustedRegistrations = registrations.map(registration => {
+            const utcDate = new Date(registration.registration_date);
+            const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000);
+            registration.registration_date = localDate.toISOString().split('T')[0]; // Adjusted local date
+            return registration;
+        });
+
+        res.json(adjustedRegistrations); // Send the adjusted registrations back as JSON
     } catch (err) {
         console.log('Database error:', err);
         res.status(500).json({ error: 'Failed to fetch registrations' });
@@ -296,7 +314,8 @@ app.post('/api/register-pet', (req, res) => {
 
     const { pet_name, registration_date } = req.body;
     const user_id = req.session.user.id;
-
+    console.log("pet_name: " + pet_name)
+    console.log("registration_date: " + registration_date)
     if (!pet_name || !registration_date) {
         console.log('Missing pet_name or registration_date in request');
         return res.status(400).send('Pet name and registration date are required');
