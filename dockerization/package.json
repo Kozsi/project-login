@@ -5,14 +5,12 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "build": "npm run build:css && npm run build:js",
-    "build:css": "node-sass public/scss/ -o public/css/",
-    "build:js": "webpack"
+    "build": "echo 'No build step required for this app.'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "A basic login application with pet registration.",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
@@ -25,9 +23,6 @@
     "mysql2": "^3.11.3"
   },
   "devDependencies": {
-    "node-sass": "^9.0.0",
-    "nodemon": "^3.1.7",
-    "webpack": "^5.96.1",
-    "webpack-cli": "^5.1.4"
+    "nodemon": "^3.1.7"
   }
 }

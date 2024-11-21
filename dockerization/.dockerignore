@@ -3,5 +3,3 @@ npm-debug.log
 Dockerfile
 .git
 .gitignore
-folder-structure.txt
-webpack.config.js

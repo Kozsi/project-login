@@ -13,7 +13,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public')); // Serve static files
 app.set('view engine', 'ejs');
 app.use(express.json());
-
+require('dotenv').config();
 
 // Session configuration
 app.use(session({
@@ -29,10 +29,11 @@ let db;
 async function initializeDbConnection() {
     try {
         db = await mysql.createConnection({
-            host: 'localhost',
-            user: 'userdb_service',
-            password: 'password',  // replace with your MySQL password
-            database: 'userdb'
+            host: process.env.DB_HOST,
+            port: process.env.DB_PORT,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD, 
+            database: process.env.DB_NAME
         });
         console.log('Connected to database.');
     } catch (err) {

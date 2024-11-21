@@ -1,20 +1,20 @@
-# Use a Node.js LTS base image
-FROM node:18-alpine
+# Use Node.js LTS image
+FROM node:18
 
-# Set the working directory inside the container
-WORKDIR /usr/src/app
+# Set the working directory
+WORKDIR /app
 
-# Copy package.json and package-lock.json files
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies (including production dependencies only)
-RUN npm install --production
+# Install dependencies
+RUN npm install
 
-# Copy the rest of the application files
+# Copy the application code
 COPY . .
 
-# Expose the port your app runs on
+# Expose the application port
 EXPOSE 3000
 
-# Define the command to start your app
+# Run the app
 CMD ["npm", "start"]
