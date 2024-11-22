@@ -28,12 +28,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 3: Build the Docker image
+      # Step 3: Convert repository owner to lowercase
+      - name: Normalize Repository Owner
+        id: vars
+        run: echo "::set-output name=owner_lower::${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]'
+
+      # Step 4: Build the Docker image
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner | toLowerCase }}/${{ github.repository }}:latest ./dockerization
+          docker build -t ghcr.io/${{ steps.vars.outputs.owner_lower }}/${{ github.repository }}:latest ./dockerization
 
-      # Step 4: Push the Docker image to GitHub Container Registry
+      # Step 5: Push the Docker image to GitHub Container Registry
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository_owner | toLowerCase }}/${{ github.repository }}:latest
+          docker push ghcr.io/${{ steps.vars.outputs.owner_lower }}/${{ github.repository }}:latest
