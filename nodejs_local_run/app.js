@@ -82,26 +82,35 @@ app.get('/calendar', async (req, res) => {
     // Fetch registrations for the selected month
     const startOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
     const endOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-
+    
+    // Fetch registrations for the selected month
     try {
         const [registrations] = await db.query(
             'SELECT * FROM day_registrations WHERE registration_date BETWEEN ? AND ?',
             [startOfMonth, endOfMonth]
         );
-
+    
         // Format the results to be used in the calendar
-        const formattedRegistrations = registrations.map(reg => ({
-            petName: reg.pet_name,
-            registrationDate: new Date(reg.registration_date).toISOString().split('T')[0], // Format date as YYYY-MM-DD
-        }));
-
+        const formattedRegistrations = registrations.map(reg => {
+            // Convert to local timezone before formatting
+            const registrationDate = new Date(reg.registration_date);
+            const localDate = new Date(registrationDate.getTime() - registrationDate.getTimezoneOffset() * 60000);
+    
+            return {
+                petName: reg.pet_name,
+                registrationDate: localDate.toISOString().split('T')[0], // Format date as YYYY-MM-DD in local time
+                petId: reg.id,
+                userId: reg.user_id,
+            };
+        });
+    
         // Render the calendar page with registration data
         res.render('calendar', {
             currentUser,
             monthDate,
             previousMonth,
             nextMonth,
-            registrations: formattedRegistrations, // Pass the registrations to the calendar view
+            registrations: formattedRegistrations,
         });
     } catch (err) {
         console.log("Error fetching registrations:", err);
@@ -260,7 +269,6 @@ app.post('/edit-profile', async (req, res) => {
     }
 });
 
-// Backend changes for pet registration
 app.get('/api/registrations', async (req, res) => {
     const { month } = req.query;
 
@@ -268,41 +276,44 @@ app.get('/api/registrations', async (req, res) => {
         return res.status(400).json({ error: 'Month query parameter is required' });
     }
 
-    // Start date (1st day of the month, beginning of the day in UTC)
+    // Start date (1st day of the month, local time)
     const monthStart = new Date(month);
     monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0); // Set to midnight UTC
-    const formattedStart = monthStart.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+    monthStart.setHours(0, 0, 0, 0); // Start of the month
+    const formattedStart = monthStart.toISOString().split('T')[0];
 
-    // End date (last day of the month, end of the day in UTC)
+    // End date (last day of the month, local time)
     const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
-    monthEnd.setHours(23, 59, 59, 999); // Set to the last moment of the month UTC
-    const formattedEnd = monthEnd.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+    monthEnd.setHours(23, 59, 59, 999); // End of the month
+    const formattedEnd = monthEnd.toISOString().split('T')[0];
 
     console.log("Fetching registrations from:", formattedStart, "to:", formattedEnd);
 
     try {
-        // Query the database using async/await
-        const [registrations] = await db.query(`
-            SELECT pet_name, registration_date
+        // Query the database
+        const [registrations] = await db.query(
+            `SELECT pet_name, registration_date
             FROM day_registrations
-            WHERE registration_date >= ? AND registration_date <= ?`, 
+            WHERE registration_date >= ? AND registration_date <= ?`,
             [formattedStart, formattedEnd]
         );
 
-        console.log("Registrations fetched:", registrations); // Log the registrations to check if the dates are correct
-        
-        // Adjust dates based on the local time zone after fetching the data
+        console.log("Registrations fetched (UTC):", registrations);
+
+        // Adjust dates to local timezone
         const adjustedRegistrations = registrations.map(registration => {
             const utcDate = new Date(registration.registration_date);
-            const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000);
-            registration.registration_date = localDate.toISOString().split('T')[0]; // Adjusted local date
-            return registration;
+            const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000); // Adjust to local timezone
+            return {
+                petName: registration.pet_name,
+                registrationDate: localDate.toISOString().split('T')[0], // 'YYYY-MM-DD'
+            };
         });
 
-        res.json(adjustedRegistrations); // Send the adjusted registrations back as JSON
+        console.log("Registrations adjusted to local timezone:", adjustedRegistrations);
+        res.json(adjustedRegistrations);
     } catch (err) {
-        console.log('Database error:', err);
+        console.error('Database error:', err);
         res.status(500).json({ error: 'Failed to fetch registrations' });
     }
 });
@@ -337,17 +348,82 @@ app.post('/api/register-pet', (req, res) => {
 
 app.delete('/api/remove-registration/:id', (req, res) => {
     const { id } = req.params;
-    const user_id = req.session.user.id;
+    const user_id = req.session.user.id; // Assuming user ID is stored in session
 
     db.query(
-        'DELETE FROM day_registrations WHERE id = ? AND user_id = ?',
-        [id, user_id],
-        (err) => {
-            if (err) return res.status(500).send('Error removing registration');
-            res.status(200).send('Registration removed successfully');
+        'SELECT user_id FROM day_registrations WHERE id = ?',
+        [id],
+        (err, results) => {
+            if (err) {
+                return res.status(500).send('Error retrieving registration data');
+            }
+
+            if (results.length === 0) {
+                return res.status(404).send('Registration not found');
+            }
+
+            const registration = results[0];
+
+            if (registration.user_id !== user_id) {
+                return res.status(403).send('You are not authorized to delete this registration');
+            }
+
+            // Proceed with deletion if the user is the owner
+            db.query(
+                'DELETE FROM day_registrations WHERE id = ?',
+                [id],
+                (deleteErr) => {
+                    if (deleteErr) {
+                        return res.status(500).send('Error removing registration');
+                    }
+                    res.status(200).json({ success: true, message: 'Registration removed successfully' });
+                }
+            );
         }
     );
 });
+
+app.get('/api/pet-details/:id', async (req, res) => {
+    const petId = Number(req.params.id); // Ensure petId is a number
+    console.log("Endpoint hit for petId:", petId);
+    const current_user_id = req.session.user.id;
+    const query = 'SELECT id, pet_name, registration_date, user_id FROM day_registrations WHERE id = ?';
+    try {
+        const [results] = await db.query(query, [petId]);
+
+        if (results.length > 0) {
+            const registration = results[0];
+            console.log('Found registration:', registration);
+            res.json({
+                id: registration.id,
+                pet_name: registration.pet_name,
+                date: registration.registration_date,
+                user_id: registration.user_id,
+            });
+        } else {
+            console.log('No registration found for petId:', petId);
+            res.status(404).json({ error: 'Registration not found' });
+        }
+    } catch (err) {
+        console.error('Database query failed:', err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+
+
+/*app.get('/api/pet-details/:id', (req, res) => {
+    const petId = req.params.id;
+    console.log("Endpoint hit for petId:", petId);
+
+    // Test with dummy data
+    res.json({
+        id: petId,
+        pet_name: "Test Pet",
+        date: "2024-12-25",
+        user_id: 123,
+    });
+});*/
 
 
 // Start the server

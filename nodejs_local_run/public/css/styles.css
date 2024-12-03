@@ -38,6 +38,11 @@ h2 {
     margin: 20px 0 10px;
 }
 
+h3 {
+    color: #007bff;
+    margin-bottom: 20px;
+}
+
 form {
     background: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
     padding: 20px;
@@ -105,6 +110,7 @@ p {
 }
 
 #registration-modal input {
+    color: red;
     margin: 5px 0;
     padding: 10px;
     font-size: 1em;
@@ -133,4 +139,80 @@ p {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 999;
+}
+
+/* Modal overlay (background) */
+#pet-details-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none; /* Hidden by default */
+}
+
+/* Modal content */
+#pet-details-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#pet-details-modal input[type="text"] {
+    color: #000; /* Ensure text is visible */
+    background-color: #fff; /* White background for clarity */
+    padding: 5px;
+    border: 1px solid #ccc; /* Optional border for visibility */
+    border-radius: 4px;
+    width: 100%; /* Ensure inputs span the modal width */
+    box-sizing: border-box;
+}
+
+#pet-details-modal {
+    display: none; /* Hidden by default */
+}
+
+#pet-details-modal h3 {
+    margin-top: 0;
+}
+
+#pet-details-modal button {
+    margin-top: 10px;
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#pet-details-content input {
+    color: #000;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#pet-details-modal button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+#pet-details-modal button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+#pet-name,
+#selected-date {
+    color: black;
+    background-color: white; /* Ensure the background is white */
+    border: 1px solid #ccc; /* Optional: Border for better visibility */
 }

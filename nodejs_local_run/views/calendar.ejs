@@ -108,7 +108,7 @@
 </head>
 <body>
     <%- include('partials/sidebar') %>
-
+    
     <div class="navigation">
         <a class="button" href="/calendar?month=<%= previousMonth.toISOString().split('T')[0] %>">Previous Month</a>
         <a class="button" href="/calendar?month=<%= nextMonth.toISOString().split('T')[0] %>">Next Month</a>
@@ -143,10 +143,19 @@
             if (day) {
                 const formattedDate = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
         %>
-            <div class="day" data-date="<%= formattedDate %>" onclick="openRegistrationModal(this)">
-                <%= day.getDate() %>
-                <div class="registered-pet" id="registered-pet-<%= formattedDate %>"></div>
-            </div>
+        <div class="day" data-date="<%= formattedDate %>" onclick="openRegistrationModal(this)">
+            <%= day.getDate() %>
+            <% registrations
+                .filter(registration => registration.registrationDate === formattedDate)
+                .forEach(registration => { %>
+                <div class="registered-pet" 
+                    data-pet-id="<%= registration.petId %>" 
+                    data-pet-name="<%= registration.petName %>"
+                    onclick="openPetDetails(this, event)">
+                   <%= registration.petName %>
+               </div>
+            <% }); %>
+        </div>
         <% 
             } else { 
         %>
@@ -172,109 +181,30 @@
         </form>
     </div>
 
+    <!-- Modal for Pet Details -->
+    <div id="pet-details-modal">
+        <div id="pet-details-overlay" onclick="closePetDetailsModal()"></div>
+        <div id="pet-details-content">
+            <h3>Pet Details</h3>
+            <form id="pet-details-form">
+                <label for="pet-name-details">Pet Name</label>
+                <input type="text" id="pet-name-details" readonly />
+                <label for="selected-date-details">Registered Date</label>
+                <input type="text" id="selected-date-details" readonly />
+                <button type="button" id="delete-button" onclick="deleteRegistration()" disabled>Delete</button>
+                <button type="button" onclick="closePetDetailsModal()">Close</button>
+            </form>
+        </div>
+    </div>
+    
     <script>
-function openRegistrationModal(dayElement) {
-    const date = new Date(dayElement.getAttribute('data-date'));
-    const selectedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    document.getElementById('selected-date').value = selectedDate;
-
-    // Show the modal overlay and registration modal
-    document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('registration-modal').style.display = 'block';
-    
-    // Get registered pet name from the day element and make it clickable
-    const petNameElement = dayElement.querySelector('.registered-pet');
-    if (petNameElement) {
-        petNameElement.addEventListener('click', function() {
-            openPetDetails(petNameElement);
-        });
-    }
-    console.log('Selected Date:', selectedDate);
-}
-
-function openPetDetails(petNameElement) {
-    // Assuming the petNameElement has the pet ID as a data attribute
-    const petId = petNameElement.getAttribute('data-pet-id');
-    
-    // Fetch the pet details from the server (replace with your actual API endpoint)
-    fetch(`/api/pet-details/${petId}`)
-        .then(response => response.json())
-        .then(petDetails => {
-            // Populate the modal with pet details
-            document.getElementById('pet-name').value = petDetails.name;
-            document.getElementById('pet-details').innerHTML = `
-                <p>Owner: ${petDetails.owner}</p>
-                <p>Breed: ${petDetails.breed}</p>
-            `;
-        })
-        .catch(error => {
-            console.error("Error fetching pet details:", error);
-        });
-}
-        document.getElementById('registration-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const petName = document.getElementById('pet-name').value;
-            console.log("pet-name: " + petName);
-            const registrationDate = document.getElementById('selected-date').value;
-            console.log("selected-date: " + registrationDate);
-
-            try {
-                const response = await fetch('/api/register-pet', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pet_name: petName, registration_date: registrationDate })
-                });
-
-                if (!response.ok) throw new Error('Failed to register pet');
-
-                alert('Pet registered!');
-                closeRegistrationModal(); // Ensure this is being called
-                console.log("Modal closed after successful registration."); // Debugging line
-
-                // Update the calendar with the new registration immediately after submitting
-                const dayElement = document.querySelector(`[data-date="${registrationDate}"]`);
-                    const registeredPetElement = dayElement.querySelector('.registered-pet');
-                    registeredPetElement.innerText = petName;
-                    registeredPetElement.style.display = 'block'; // Ensure it's visible
-                
-            } catch (err) {
-                console.error('Error:', err);
-                alert('Failed to register pet. Please try again.');
-            }
-        });
-
-
-
-        // Fetch existing registrations for the current month
-        (async () => {
-    try {
-        console.log("frontend1");
-        const response = await fetch(`/api/registrations?month=<%= monthDate.toISOString().split('T')[0] %>`);
-        if (!response.ok) throw new Error('Failed to fetch registrations');
-
-        console.log("frontend2");
-        const data = await response.json();
-        console.log(data); // Log the response to check if registration_date is in the correct format
-
-        data.forEach(registration => {
-            const utcDate = new Date(registration.registration_date);
-            
-            // Convert UTC date to local date
-            const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000);
-            const formattedLocalDate = localDate.toISOString().split('T')[0]; // Convert to local date string (YYYY-MM-DD)
-
-            // Select the correct day element
-            const dayElement = document.querySelector(`[data-date="${formattedLocalDate}"]`);
-            if (dayElement) {
-                const registeredPetElement = dayElement.querySelector('.registered-pet');
-                registeredPetElement.innerText = registration.pet_name;
-                registeredPetElement.style.display = 'block'; // Ensure it's visible
-            }
-        });
-    } catch (err) {
-        console.log('Error fetching registrations:', err);
-    }
-})();
+        // Pass formattedMonth as a global variable
+        window.formattedMonth = "<%= monthDate.toISOString().split('T')[0] %>";
+        console.log('Formatted Month:', window.formattedMonth); // Debugging line
     </script>
+    <script>
+        const loggedInUserId = "<%= JSON.stringify(currentUser.id) %>";
+    </script>
+    <script src="/scripts/calendar.js"></script>
 </body>
 </html>
