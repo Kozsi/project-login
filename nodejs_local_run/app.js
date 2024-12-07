@@ -318,7 +318,7 @@ app.get('/api/registrations', async (req, res) => {
     }
 });
 
-app.post('/api/register-pet', (req, res) => {
+app.post('/api/register-pet', async (req, res) => {
     if (!req.session.user) {
         console.log('Unauthorized access attempt');
         return res.status(401).send('Unauthorized');
@@ -326,61 +326,75 @@ app.post('/api/register-pet', (req, res) => {
 
     const { pet_name, registration_date } = req.body;
     const user_id = req.session.user.id;
-    console.log("pet_name: " + pet_name)
-    console.log("registration_date: " + registration_date)
+
+    console.log('pet_name:', pet_name);
+    console.log('registration_date:', registration_date);
+
     if (!pet_name || !registration_date) {
         console.log('Missing pet_name or registration_date in request');
         return res.status(400).send('Pet name and registration date are required');
     }
 
-    db.query(
-        'INSERT INTO day_registrations (user_id, pet_name, registration_date) VALUES (?, ?, ?)',
-        [user_id, pet_name, registration_date],
-        (err) => {
-            if (err) {
-                console.log('Error registering pet:', err);
-                return res.status(500).send('Error registering pet');
-            }
-            res.status(200).send('Pet registered successfully');
+    try {
+        // Check if a pet is already registered for the given date
+        const [existingRegistration] = await db.query(
+            'SELECT * FROM day_registrations WHERE registration_date = ?',
+            [registration_date]
+        );
+
+        if (existingRegistration.length > 0) {
+            console.log('A pet is already registered for this date:', registration_date);
+            return res.status(409).send('A pet is already registered for this date');
         }
-    );
+
+        // If no pet is registered for the date, proceed with insertion
+        await db.query(
+            'INSERT INTO day_registrations (user_id, pet_name, registration_date) VALUES (?, ?, ?)',
+            [user_id, pet_name, registration_date]
+        );
+
+        console.log('Pet registered successfully');
+        res.status(200).send('Pet registered successfully');
+    } catch (err) {
+        console.error('Error handling registration:', err);
+        res.status(500).send('Error registering pet');
+    }
 });
 
-app.delete('/api/remove-registration/:id', (req, res) => {
+app.delete('/api/remove-registration/:id', async (req, res) => {
     const { id } = req.params;
-    const user_id = req.session.user.id; // Assuming user ID is stored in session
+    const current_user_id = req.session.user.id; // Assuming user ID is stored in session
 
-    db.query(
-        'SELECT user_id FROM day_registrations WHERE id = ?',
-        [id],
-        (err, results) => {
-            if (err) {
-                return res.status(500).send('Error retrieving registration data');
-            }
-
-            if (results.length === 0) {
-                return res.status(404).send('Registration not found');
-            }
-
-            const registration = results[0];
-
-            if (registration.user_id !== user_id) {
-                return res.status(403).send('You are not authorized to delete this registration');
-            }
-
-            // Proceed with deletion if the user is the owner
-            db.query(
-                'DELETE FROM day_registrations WHERE id = ?',
-                [id],
-                (deleteErr) => {
-                    if (deleteErr) {
-                        return res.status(500).send('Error removing registration');
-                    }
-                    res.status(200).json({ success: true, message: 'Registration removed successfully' });
-                }
-            );
+    const selectQuery = 'SELECT user_id FROM day_registrations WHERE id = ?';
+    const deleteQuery = 'DELETE FROM day_registrations WHERE id = ?';
+    
+    try {
+        // Fetch the registration
+        const [results] = await db.query(selectQuery, [id]);
+    
+        if (results.length === 0) {
+            console.log('No registration found for id:', id);
+            return res.status(404).json({ error: 'Registration not found' });
         }
-    );
+    
+        const registration = results[0];
+        console.log('Found registration:', registration);
+    
+        if (registration.user_id !== current_user_id) {
+            console.log('Unauthorized deletion attempt by user:', current_user_id);
+            return res.status(403).json({ error: 'You are not authorized to delete this registration' });
+        }
+    
+        // Proceed with deletion if the user is the owner
+        const [deleteResult] = await db.query(deleteQuery, [id]);
+        console.log('Deleted registration:', deleteResult);
+    
+        res.status(200).json({ success: true, message: 'Registration removed successfully' });
+        //res.redirect('/calendar');
+    } catch (err) {
+        console.error('Database query failed:', err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
 app.get('/api/pet-details/:id', async (req, res) => {

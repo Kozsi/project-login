@@ -40,6 +40,7 @@ document.getElementById('registration-form').addEventListener('submit', async (e
         if (!response.ok) throw new Error('Failed to register pet');
 
         alert('Pet registered!');
+        fetchAndRenderRegistrations();
         closeRegistrationModal(); // Ensure this is being called
         console.log("Modal closed after successful registration."); // Debugging line
 
@@ -167,6 +168,7 @@ function deleteRegistration() {
     .then(response => {
         if (response.ok) {
             alert('Pet registration removed successfully!');
+            fetchAndRenderRegistrations();
             closePetDetailsModal(); // Close the modal after deletion
             // Optionally, you can also remove the pet name from the calendar view dynamically
         } else {
@@ -178,6 +180,38 @@ function deleteRegistration() {
         alert('Error removing registration');
     });
 }
+
+// it can be called 
+async function fetchAndRenderRegistrations() {
+    try {
+        const response = await fetch(`/api/registrations?month=${formattedMonth}`);
+        if (!response.ok) throw new Error('Failed to fetch registrations');
+
+        const data = await response.json();
+        data.forEach(registration => {
+            const formattedLocalDate = registration.registration_date; // Already formatted as 'YYYY-MM-DD'
+
+            // Select the correct day element
+            const dayElement = document.querySelector(`[data-date="${formattedLocalDate}"]`);
+            if (dayElement) {
+                let registeredPetElement = dayElement.querySelector('.registered-pet');
+                
+                // If the element doesn't exist, create it
+                if (!registeredPetElement) {
+                    registeredPetElement = document.createElement('div');
+                    registeredPetElement.classList.add('registered-pet');
+                    dayElement.appendChild(registeredPetElement);
+                }
+
+                registeredPetElement.innerText = registration.pet_name;
+                registeredPetElement.style.display = 'block'; // Ensure it's visible
+            }
+        });
+    } catch (err) {
+        console.error('Error fetching registrations:', err);
+    }
+}
+
 
 // Fetch existing registrations for the current month
 (async () => {
