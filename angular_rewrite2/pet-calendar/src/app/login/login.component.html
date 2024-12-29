@@ -1,0 +1,32 @@
+<!-- src/app/login/login.component.html -->
+
+<div class="form-container">
+    <h1>Login</h1>
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+        <input 
+            type="text" 
+            name="username" 
+            [(ngModel)]="username" 
+            placeholder="Username" 
+            required 
+            #usernameInput="ngModel"
+        >
+        <input 
+            type="password" 
+            name="password" 
+            [(ngModel)]="password" 
+            placeholder="Password" 
+            required 
+            #passwordInput="ngModel"
+        >
+        <button type="submit" [disabled]="!loginForm.valid">Login</button>
+    </form>
+
+    <!-- Show message if there is an error or success -->
+    <p *ngIf="message" class="message">{{ message }}</p>
+
+    <div class="link">
+        <p>Don't have an account? <a routerLink="/register">Register here</a></p>
+    </div>
+</div>
+

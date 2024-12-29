@@ -1,0 +1,21 @@
+<header>
+  <h1>Welcome to {{ title }}</h1>
+  <nav>
+    <a routerLink="/welcome" routerLinkActive="active">Home</a>
+    <a routerLink="/login" routerLinkActive="active">Login</a>
+    <a routerLink="/register" routerLinkActive="active">Register</a>
+    <a routerLink="/calendar" routerLinkActive="active">Calendar</a>
+  </nav>
+</header>
+
+<!-- Include Sidebar -->
+<sidebar></sidebar>
+
+<!-- Routed components will be injected here -->
+<div class="main-content" style="margin-left: 240px; padding: 20px;">
+  <router-outlet></router-outlet>
+</div>
+
+<footer>
+  <p>© 2024 My Angular App</p>
+</footer>

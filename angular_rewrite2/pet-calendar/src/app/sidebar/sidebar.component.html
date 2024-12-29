@@ -1,0 +1,9 @@
+<!-- sidebar.component.html -->
+<div class="sidebar">
+    <a routerLink="/" routerLinkActive="active">Welcome</a>
+    <a routerLink="/calendar" routerLinkActive="active">Calendar</a>
+    <a routerLink="/profile" routerLinkActive="active">Profile</a>
+    <form (ngSubmit)="logout()" method="POST" style="display: inline;">
+      <button type="submit" class="logout-button">Logout</button>
+    </form>
+  </div>

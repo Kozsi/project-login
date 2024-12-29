@@ -1,0 +1,21 @@
+<div *ngIf="user; else notLoggedIn">
+    <!-- Sidebar Component -->
+    <app-sidebar></app-sidebar>
+
+    <!-- Main content section -->
+    <div class="main-content" style="margin-left: 220px; padding: 20px;">
+        <h1>Welcome, {{ user.username }}!</h1>
+        <button (click)="goTo('/calendar')">Go to Calendar</button>
+    </div>
+</div>
+
+<ng-template #notLoggedIn>
+    <link rel="stylesheet" type="text/css" href="assets/public/css/styles.css">
+    <!-- Display this if the user is not logged in -->
+    <h1>Welcome to Our Application!</h1>
+    <p class="welcome-message">Please login or register to continue.</p>
+    <button (click)="goTo('/login')">Login</button>
+    <button (click)="goTo('/register')">Register</button>
+</ng-template>
+
+
